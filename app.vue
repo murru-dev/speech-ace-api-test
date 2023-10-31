@@ -8,51 +8,61 @@
   
       <!-- App -->
       <template v-else>
-  
-        <!-- Sentence -->
-        <div class="sentence-wrapper w3-padding w3-center">
-          <button
-            v-if="!isRecording"
-            class="w3-button w3-circle w3-indigo small-circle-btn"
-            @click="nextSentence()"
-          >
-            <i class="fa-solid fa-arrow-rotate-right"></i>
-          </button>
-          <h1 class="sentence">{{ sentence }}</h1>
+
+        <div v-if="processing">
+          Evaluating score...
         </div>
   
-        <!-- Recording Button -->
-        <div>
-          <button
-            v-if="isRecording"
-            class="w3-button w3-circle w3-teal w3-xlarge circle-btn"
-            @click="stop()"
-          >
-            <i class="fa-solid fa-stop"></i>
-          </button>
-          <button
-            v-else
-            class="w3-button w3-circle w3-teal w3-xlarge circle-btn"
-            @click="start()"
-          >
-            <i class="fa-solid fa-microphone"></i>
-          </button>
-        </div>
+        <template v-else>
+          <!-- Sentence -->
+          <div class="sentence-wrapper w3-padding w3-center">
+            <button
+              v-if="!isRecording"
+              class="w3-button w3-circle w3-indigo small-circle-btn"
+              @click="nextSentence()"
+            >
+              <i class="fa-solid fa-arrow-rotate-right"></i>
+            </button>
+            <h1 class="sentence">{{ sentence }}</h1>
+          </div>
+    
+          <!-- Recording Button -->
+          <div>
+            <button
+              v-if="isRecording"
+              class="w3-button w3-circle w3-teal w3-xlarge circle-btn"
+              @click="stop()"
+            >
+              <i class="fa-solid fa-stop"></i>
+            </button>
+            <button
+              v-else
+              class="w3-button w3-circle w3-teal w3-xlarge circle-btn"
+              @click="start()"
+            >
+              <i class="fa-solid fa-microphone"></i>
+            </button>
+          </div>
   
-        <!-- Recording State -->
-        <div class="w3-panel w3-black recording-wrapper">
-          <p v-if="isRecording" class="w3-circle recording-circle"></p>
-          <p>{{ isRecording ? 'Recording...' : 'Start recording' }}</p>
-        </div>
+          <!-- Recording State -->
+          <div class="w3-panel w3-black recording-wrapper">
+            <p v-if="isRecording" class="w3-circle recording-circle"></p>
+            <p>{{ isRecording ? 'Recording...' : 'Start recording' }}</p>
+          </div>
+    
+          <!-- Audio track -->
+          <audio v-if="audioURL" controls :src="audioURL"></audio>
   
-        <!-- Audio track -->
-        <audio v-if="audioURL" controls :src="audioURL"></audio>
+          <div v-if="score">
+            Your score is: {{ score }}
+          </div>
+        </template>
       </template>
     </template>
   </div>
 </template>
 <script setup lang="ts">
-import { Client, Databases, Query } from 'appwrite';
+import { Client, Databases, Query, Storage, ID } from 'appwrite';
 
 const config = useRuntimeConfig()
 
@@ -70,30 +80,26 @@ const constraints = {
 
 // Reactive props
 const loading = ref<boolean>(true);
+const processing = ref<boolean>(false);
 const supports = ref<boolean>(false);
 const isRecording = ref<boolean>(false);
 const audioURL = ref<string>('');
 const sentences = ref<string[]>([]);
-const sentence = ref<string>('')
+const sentence = ref<string>('');
+const score = ref<number | null>(null);
 
 const getSentences = async () => {
   const client = new Client()
     .setEndpoint(config.public.appwriteEndpoint)
     .setProject(config.public.appwriteProject);
-
   const databases = new Databases(client);
   
   try {
-
     const { documents } = await databases.listDocuments(config.public.appwriteDb, config.public.appwriteVocabularyCollection, [
       Query.select(['sentences'])
     ]);
-
     setSentences(documents);
-    
-  } catch (error) {
-    console.log(error);
-  }
+  } catch (error) { console.log(error); }
 }
 
 const shuffle = (array: string[]) => { 
@@ -119,6 +125,7 @@ const nextSentence = () => {
   mediaRecorder = null;
   chunks = [];
   audioURL.value = '';
+  score.value = null;
   sentence.value = sentences.value[Math.floor(Math.random() * sentences.value.length)];
 }
 
@@ -127,7 +134,7 @@ const getUserMedia = async (): Promise<MediaStream> => {
   return n;
 }
 
-const toggleIsRecording = () => { isRecording.value = !isRecording.value; } 
+const toggleIsRecording = () => { isRecording.value = !isRecording.value; }
 
 const start = async () => {
   toggleIsRecording();
@@ -148,12 +155,26 @@ const start = async () => {
 
   // Register on stop event
   mediaRecorder.onstop = async (e) => {
-    const blob = new Blob(chunks, { type: "audio/ogg; codecs=opus" });
+    const blob = new Blob(chunks, { type: 'audio/wav' });
     chunks = [];
     audioURL.value = window.URL.createObjectURL(blob);
 
-    // Upload data to appwrite
-    
+    // Convert blob to file
+    const formData = new FormData();
+    formData.append('text', sentence.value);
+    formData.append('name', `murru-${Date.now()}.wav`);
+    formData.append('file', blob);
+
+    processing.value = true;
+
+    const res = await useFetch('/api/getScore', {
+      method: 'POST',
+      body: formData
+    });
+
+    score.value = res.data.value.text_score.speechace_score.pronunciation;
+
+    processing.value = false;
   }
 }
 
@@ -161,14 +182,6 @@ const stop = async () => {
   toggleIsRecording();
   mediaRecorder!.stop();
 }
-
-/* // Check if device supports program
-(async () => {
-  const n = await getUserMedia();
-  if (navigator.mediaDevices && n) {
-    supports.value = true;
-  }
-})(); */
 
 // Prepare app
 onMounted(async () => {

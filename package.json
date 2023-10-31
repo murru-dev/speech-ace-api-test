@@ -18,7 +18,14 @@
     "vue-tsc": "^1.8.20"
   },
   "dependencies": {
+    "@types/axios": "^0.14.0",
+    "@types/form-data": "^2.5.0",
+    "@types/got": "^9.6.12",
     "@types/webrtc": "^0.0.39",
-    "appwrite": "^13.0.0"
+    "appwrite": "^13.0.0",
+    "axios": "^1.6.0",
+    "form-data": "^4.0.0",
+    "got": "^13.0.0",
+    "node-appwrite": "^11.0.0"
   }
 }
