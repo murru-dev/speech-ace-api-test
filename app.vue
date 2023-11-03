@@ -193,9 +193,8 @@ onMounted(async () => {
   const n = await getUserMedia();
   if (navigator.mediaDevices && n) {
     supports.value = true;
-    console.log('MENOR');
-    await getSentences();
-    console.log('TRAJE EJEMPLOS');
+    const test = await getSentences();
+    console.log(test);
     nextSentence();
     setTimeout(() => {
       loading.value = false;
