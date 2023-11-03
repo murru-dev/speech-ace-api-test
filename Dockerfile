@@ -33,7 +33,6 @@ FROM base
 ENV PORT=$PORT
 
 COPY --from=build /src/.output /src/.output
-
-RUN mkdir /src/.output/audio-files
+COPY --from=build /src/public /src/public
 
 CMD [ "node", ".output/server/index.mjs" ]

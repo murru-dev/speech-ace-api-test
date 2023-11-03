@@ -30,8 +30,8 @@ export default defineEventHandler(async (event) => {
     const audioUrl = `https://backend.dcvocabulary.com/v1/storage/buckets/${config.public.appwriteSpeechAnalyzerBucket}/files/${response.$id}/view?project=${config.public.appwriteProject}&mode=admin`;
 
     // Download file
-    await streamPipeline(got.stream(audioUrl), fs.createWriteStream(`audio-files/${fileName}`));
-    const crs = fs.createReadStream(`audio-files/${fileName}`);
+    await streamPipeline(got.stream(audioUrl), fs.createWriteStream(`public/${fileName}`));
+    const crs = fs.createReadStream(`public/${fileName}`);
 
     const fd = new FormData();
     fd.append('text', text);
@@ -50,7 +50,7 @@ export default defineEventHandler(async (event) => {
     };
     
     const result = await axios(conf);
-    await unlink(`audio-files/${fileName}`);
+    await unlink(`public/${fileName}`);
 
     return result.data;
   } catch (error) {
