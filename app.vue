@@ -1,10 +1,5 @@
 <template>
   <div class="wrapper">
-    <div class="w3-container" style="width: 100%;">
-      <pre>
-        {{ config.public }}
-      </pre>
-    </div>
     <template v-if="!loading">
       <!-- Unsupported browser message -->
       <template v-if="!supports">
@@ -193,8 +188,7 @@ onMounted(async () => {
   const n = await getUserMedia();
   if (navigator.mediaDevices && n) {
     supports.value = true;
-    const test = await getSentences();
-    console.log(test);
+    await getSentences();
     nextSentence();
     setTimeout(() => {
       loading.value = false;
