@@ -34,4 +34,6 @@ ENV PORT=$PORT
 
 COPY --from=build /src/.output /src/.output
 
+RUN mkdir /src/.output/audio-files
+
 CMD [ "node", ".output/server/index.mjs" ]
