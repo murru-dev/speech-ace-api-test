@@ -1,5 +1,10 @@
 <template>
   <div class="wrapper">
+    <div class="w3-container" style="width: 100%;">
+      <pre>
+        {{ config.public }}
+      </pre>
+    </div>
     <template v-if="!loading">
       <!-- Unsupported browser message -->
       <template v-if="!supports">
